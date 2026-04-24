@@ -19,7 +19,7 @@ func init() {
 
 func TestConcurrentFeedbackCollection_Stress(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping stress test in short mode")
+		t.Skip("skipping stress test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	const goroutines = 100
@@ -55,7 +55,7 @@ func TestConcurrentFeedbackCollection_Stress(t *testing.T) {
 
 func TestConcurrentFeedbackRetrieval_Stress(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping stress test in short mode")
+		t.Skip("skipping stress test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	const goroutines = 75
@@ -110,7 +110,7 @@ func TestConcurrentFeedbackRetrieval_Stress(t *testing.T) {
 
 func TestConcurrentRewardScoring_Stress(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping stress test in short mode")
+		t.Skip("skipping stress test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	const goroutines = 80
@@ -138,7 +138,7 @@ func TestConcurrentRewardScoring_Stress(t *testing.T) {
 
 func TestConcurrentScoreWithDimensions_Stress(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping stress test in short mode")
+		t.Skip("skipping stress test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	const goroutines = 60
@@ -168,7 +168,7 @@ func TestConcurrentScoreWithDimensions_Stress(t *testing.T) {
 
 func TestConcurrentPolicyOperations_Stress(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping stress test in short mode")
+		t.Skip("skipping stress test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	const goroutines = 50
@@ -206,7 +206,7 @@ func TestConcurrentPolicyOperations_Stress(t *testing.T) {
 
 func TestConcurrentTraining_Stress(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping stress test in short mode")
+		t.Skip("skipping stress test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	const goroutines = 50
@@ -243,7 +243,7 @@ func TestConcurrentTraining_Stress(t *testing.T) {
 
 func TestConcurrentFeedbackCollectionAndExport_Stress(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping stress test in short mode")
+		t.Skip("skipping stress test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	const writers = 50

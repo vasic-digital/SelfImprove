@@ -20,7 +20,7 @@ func init() {
 
 func TestCollectNilFeedback_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	collector := selfimprove.NewInMemoryFeedbackCollector(nil, 1000)
@@ -31,7 +31,7 @@ func TestCollectNilFeedback_Security(t *testing.T) {
 
 func TestCollectEmptyFeedback_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	collector := selfimprove.NewInMemoryFeedbackCollector(nil, 1000)
@@ -44,7 +44,7 @@ func TestCollectEmptyFeedback_Security(t *testing.T) {
 
 func TestGetBySessionNonexistent_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	collector := selfimprove.NewInMemoryFeedbackCollector(nil, 1000)
@@ -55,7 +55,7 @@ func TestGetBySessionNonexistent_Security(t *testing.T) {
 
 func TestGetByPromptNonexistent_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	collector := selfimprove.NewInMemoryFeedbackCollector(nil, 1000)
@@ -66,7 +66,7 @@ func TestGetByPromptNonexistent_Security(t *testing.T) {
 
 func TestGetAggregatedEmpty_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	collector := selfimprove.NewInMemoryFeedbackCollector(nil, 1000)
@@ -77,7 +77,7 @@ func TestGetAggregatedEmpty_Security(t *testing.T) {
 
 func TestGetAggregatedWithNilFilter_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	collector := selfimprove.NewInMemoryFeedbackCollector(nil, 1000)
@@ -93,7 +93,7 @@ func TestGetAggregatedWithNilFilter_Security(t *testing.T) {
 
 func TestExportEmptyCollector_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	collector := selfimprove.NewInMemoryFeedbackCollector(nil, 1000)
@@ -108,7 +108,7 @@ func TestExportEmptyCollector_Security(t *testing.T) {
 
 func TestScoreWithNilProvider_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	rm := selfimprove.NewAIRewardModel(nil, nil, nil, nil)
@@ -119,7 +119,7 @@ func TestScoreWithNilProvider_Security(t *testing.T) {
 
 func TestScoreWithEmptyInputs_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	rm := selfimprove.NewAIRewardModel(nil, nil, nil, nil)
@@ -130,7 +130,7 @@ func TestScoreWithEmptyInputs_Security(t *testing.T) {
 
 func TestCompareWithNilProvider_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	rm := selfimprove.NewAIRewardModel(nil, nil, nil, nil)
@@ -140,7 +140,7 @@ func TestCompareWithNilProvider_Security(t *testing.T) {
 
 func TestTrainWithNilExamples_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	rm := selfimprove.NewAIRewardModel(nil, nil, nil, nil)
@@ -155,7 +155,7 @@ func TestTrainWithNilExamples_Security(t *testing.T) {
 
 func TestRollbackNonexistentUpdate_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	optimizer := selfimprove.NewLLMPolicyOptimizer(nil, nil, nil, nil)
@@ -166,7 +166,7 @@ func TestRollbackNonexistentUpdate_Security(t *testing.T) {
 
 func TestOptimizeWithInsufficientExamples_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	config := selfimprove.DefaultSelfImprovementConfig()
@@ -190,7 +190,7 @@ func TestOptimizeWithInsufficientExamples_Security(t *testing.T) {
 
 func TestGetHistoryEmptyOptimizer_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	optimizer := selfimprove.NewLLMPolicyOptimizer(nil, nil, nil, nil)
@@ -201,7 +201,7 @@ func TestGetHistoryEmptyOptimizer_Security(t *testing.T) {
 
 func TestGetHistoryWithZeroLimit_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	optimizer := selfimprove.NewLLMPolicyOptimizer(nil, nil, nil, nil)
@@ -222,7 +222,7 @@ func TestGetHistoryWithZeroLimit_Security(t *testing.T) {
 
 func TestPolicyDailyLimit_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	config := selfimprove.DefaultSelfImprovementConfig()
@@ -255,7 +255,7 @@ func TestPolicyDailyLimit_Security(t *testing.T) {
 
 func TestAutoFeedbackWithNilRewardModel_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	afc := selfimprove.NewAutoFeedbackCollector(nil, nil, nil)
@@ -271,7 +271,7 @@ func TestAutoFeedbackWithNilRewardModel_Security(t *testing.T) {
 
 func TestSystemCollectFeedbackNil_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	config := selfimprove.DefaultSelfImprovementConfig()

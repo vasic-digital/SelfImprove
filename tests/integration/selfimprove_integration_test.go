@@ -16,7 +16,7 @@ func init() {
 
 func TestRewardModelAndFeedbackIntegration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
+		t.Skip("skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Create reward model without provider (uses heuristic scoring)
@@ -43,7 +43,7 @@ func TestRewardModelAndFeedbackIntegration(t *testing.T) {
 
 func TestFeedbackCollectorIntegration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
+		t.Skip("skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	collector := selfimprove.NewInMemoryFeedbackCollector(nil, 1000)
@@ -97,7 +97,7 @@ func TestFeedbackCollectorIntegration(t *testing.T) {
 
 func TestFeedbackCollectorExportIntegration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
+		t.Skip("skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	collector := selfimprove.NewInMemoryFeedbackCollector(nil, 1000)
@@ -128,7 +128,7 @@ func TestFeedbackCollectorExportIntegration(t *testing.T) {
 
 func TestPolicyOptimizerIntegration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
+		t.Skip("skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	optimizer := selfimprove.NewLLMPolicyOptimizer(nil, nil, nil, nil)
@@ -146,7 +146,7 @@ func TestPolicyOptimizerIntegration(t *testing.T) {
 
 func TestRewardModelTrainIntegration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
+		t.Skip("skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	rm := selfimprove.NewAIRewardModel(nil, nil, nil, nil)
@@ -179,7 +179,7 @@ func TestRewardModelTrainIntegration(t *testing.T) {
 
 func TestFeedbackFilterIntegration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
+		t.Skip("skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	collector := selfimprove.NewInMemoryFeedbackCollector(nil, 1000)

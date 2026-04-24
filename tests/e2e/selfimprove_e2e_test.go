@@ -17,7 +17,7 @@ func init() {
 
 func TestFullSelfImprovementSystemInit_E2E(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping e2e test in short mode")
+		t.Skip("skipping e2e test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	system := selfimprove.NewSelfImprovementSystem(nil, nil)
@@ -34,7 +34,7 @@ func TestFullSelfImprovementSystemInit_E2E(t *testing.T) {
 
 func TestFeedbackCollectionAndExport_E2E(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping e2e test in short mode")
+		t.Skip("skipping e2e test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	config := selfimprove.DefaultSelfImprovementConfig()
@@ -72,7 +72,7 @@ func TestFeedbackCollectionAndExport_E2E(t *testing.T) {
 
 func TestPolicyApplyAndRollback_E2E(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping e2e test in short mode")
+		t.Skip("skipping e2e test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	optimizer := selfimprove.NewLLMPolicyOptimizer(nil, nil, nil, nil)
@@ -107,7 +107,7 @@ func TestPolicyApplyAndRollback_E2E(t *testing.T) {
 
 func TestDefaultSelfImprovementConfig_E2E(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping e2e test in short mode")
+		t.Skip("skipping e2e test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	cfg := selfimprove.DefaultSelfImprovementConfig()
@@ -128,7 +128,7 @@ func TestDefaultSelfImprovementConfig_E2E(t *testing.T) {
 
 func TestDebateServiceAdapter_E2E(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping e2e test in short mode")
+		t.Skip("skipping e2e test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	adapter := selfimprove.NewDebateServiceAdapter(nil, nil)
@@ -143,7 +143,7 @@ func TestDebateServiceAdapter_E2E(t *testing.T) {
 
 func TestRewardModelCaching_E2E(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping e2e test in short mode")
+		t.Skip("skipping e2e test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	rm := selfimprove.NewAIRewardModel(nil, nil, nil, nil)
@@ -166,7 +166,7 @@ func TestRewardModelCaching_E2E(t *testing.T) {
 
 func TestTrainingWithEmptyExamples_E2E(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping e2e test in short mode")
+		t.Skip("skipping e2e test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	rm := selfimprove.NewAIRewardModel(nil, nil, nil, nil)
@@ -178,7 +178,7 @@ func TestTrainingWithEmptyExamples_E2E(t *testing.T) {
 
 func TestFeedbackEviction_E2E(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping e2e test in short mode")
+		t.Skip("skipping e2e test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Create a collector with very small max size
@@ -205,7 +205,7 @@ func TestFeedbackEviction_E2E(t *testing.T) {
 
 func TestSystemStartAndStop_E2E(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping e2e test in short mode")
+		t.Skip("skipping e2e test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	config := selfimprove.DefaultSelfImprovementConfig()
