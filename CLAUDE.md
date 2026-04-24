@@ -10,15 +10,14 @@ same session as the change.** Coverage and green suites are not evidence.
 
 ### Acceptance demo for this module
 
-<!-- TODO: replace this block with the exact command(s) that exercise this
-     module end-to-end against real dependencies, and the expected output.
-     The commands must run the real artifact (built binary, deployed
-     container, real service) — no in-process fakes, no mocks, no
-     `httptest.NewServer`, no Robolectric, no JSDOM as proof of done. -->
-
 ```bash
-# TODO
+# Feedback collection → reward score → policy update → rollback
+cd SelfImprove && GOMAXPROCS=2 nice -n 19 go test -count=1 -race -v \
+  -run 'TestFeedbackCollectionAndExport_E2E|TestPolicyApplyAndRollback_E2E|TestFullSelfImprovementSystemInit_E2E' \
+  ./tests/e2e/...
 ```
+Expect: three E2E PASS; aggregate stats, apply+rollback preserves history, reward model accessible.
+
 
 ## Overview
 
