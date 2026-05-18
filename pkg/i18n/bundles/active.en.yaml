@@ -1,0 +1,35 @@
+# SelfImprove i18n bundle — active English (en) locale.
+#
+# Every entry maps a CONST-046-migrated hardcoded literal to a message
+# ID that production code resolves via Translator.T at runtime.
+# Consumers (helix_code) wrap this bundle behind their own *i18n.Localizer
+# + *i18nadapter.Translator and inject it into SelfImprove via
+# NewLLMPolicyOptimizer / NewSelfImprovementSystem.
+#
+# Naming convention: selfimprove_<area>_<short_description>.
+# All IDs prefixed with selfimprove_ to avoid namespace collision with
+# other submodules' bundles when loaded into the same go-i18n.Bundle.
+
+selfimprove_optimizer_prompt_analyze_header:
+  other: "Analyze these feedback patterns and suggest system prompt improvements:\n\n"
+
+selfimprove_optimizer_prompt_current_policy_label:
+  other: "Current System Prompt:\n"
+
+selfimprove_optimizer_prompt_weak_dimensions_label:
+  other: "Weak Dimensions:\n"
+
+selfimprove_optimizer_prompt_common_issues_label:
+  other: "Common Issues:\n"
+
+selfimprove_optimizer_prompt_sample_responses_label:
+  other: "Sample Low-Score Responses:\n"
+
+selfimprove_optimizer_prompt_suggest_improvements_footer:
+  other: "Suggest specific improvements to the system prompt that would address these issues."
+
+selfimprove_optimizer_prompt_dimension_bullet:
+  other: "- {{.Dimension}}: {{.Score}}\n"
+
+selfimprove_optimizer_prompt_issue_bullet:
+  other: "- {{.Issue}} (count: {{.Count}})\n"

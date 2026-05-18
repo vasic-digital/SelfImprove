@@ -11,6 +11,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"digital.vasic.selfimprove/pkg/i18n"
 )
 
 // LLMPolicyOptimizer implements PolicyOptimizer using LLM-based analysis
@@ -25,9 +27,17 @@ type LLMPolicyOptimizer struct {
 	policyMu      sync.RWMutex
 	appliedToday  int
 	lastApplyDate time.Time
+	// translator resolves CONST-046 user-facing message IDs. Defaults
+	// to i18n.NoopTranslator{} (loud message-ID echo) when not wired —
+	// production consumers (helix_code) inject *i18nadapter.Translator
+	// via SetTranslator at boot.
+	translator i18n.Translator
 }
 
-// NewLLMPolicyOptimizer creates a new LLM-based policy optimizer
+// NewLLMPolicyOptimizer creates a new LLM-based policy optimizer.
+// The optimizer starts with i18n.NoopTranslator{} for backward compat;
+// call SetTranslator with a real Translator (e.g. helix_code's
+// *i18nadapter.Translator) to receive localised user-facing strings.
 func NewLLMPolicyOptimizer(provider LLMProvider, debateService DebateService, config *SelfImprovementConfig, logger *logrus.Logger) *LLMPolicyOptimizer {
 	if config == nil {
 		config = DefaultSelfImprovementConfig()
@@ -41,7 +51,35 @@ func NewLLMPolicyOptimizer(provider LLMProvider, debateService DebateService, co
 		config:        config,
 		logger:        logger,
 		history:       make([]*PolicyUpdate, 0),
+		translator:    i18n.NoopTranslator{},
 	}
+}
+
+// SetTranslator wires a CONST-046-compliant Translator. Passing nil
+// resets to i18n.NoopTranslator{} (loud echo) — never silently disables
+// translation lookup.
+func (opt *LLMPolicyOptimizer) SetTranslator(tr i18n.Translator) {
+	if tr == nil {
+		opt.translator = i18n.NoopTranslator{}
+		return
+	}
+	opt.translator = tr
+}
+
+// tr is the internal CONST-046 resolver used by every user-facing
+// string emission in this file. It NEVER returns an error to the
+// caller — translation failures degrade to the message ID itself
+// (matching NoopTranslator behaviour) so production output remains
+// loud + obvious instead of silently empty.
+func (opt *LLMPolicyOptimizer) tr(ctx context.Context, msgID string, data map[string]any) string {
+	if opt.translator == nil {
+		opt.translator = i18n.NoopTranslator{}
+	}
+	out, err := opt.translator.T(ctx, msgID, data)
+	if err != nil || out == "" {
+		return msgID
+	}
+	return out
 }
 
 // SetCurrentPolicy sets the current system prompt/policy
@@ -268,7 +306,7 @@ func (opt *LLMPolicyOptimizer) analyzeFeedbackPatterns(examples []*TrainingExamp
 }
 
 func (opt *LLMPolicyOptimizer) optimizeWithDebate(ctx context.Context, patterns *feedbackPatterns) ([]*PolicyUpdate, error) {
-	topic := opt.buildOptimizationTopic(patterns)
+	topic := opt.buildOptimizationTopicCtx(ctx, patterns)
 
 	result, err := opt.debateService.RunDebate(ctx, topic, nil)
 	if err != nil {
@@ -290,7 +328,7 @@ Output JSON array of improvements:
   "reason": "why this helps",
   "improvement_score": 0.X}]`
 
-	prompt := opt.buildOptimizationTopic(patterns)
+	prompt := opt.buildOptimizationTopicCtx(ctx, patterns)
 
 	response, err := opt.provider.Complete(ctx, prompt, systemPrompt)
 	if err != nil {
@@ -300,33 +338,73 @@ Output JSON array of improvements:
 	return opt.parseLLMOptimizations(response, patterns)
 }
 
+// buildOptimizationTopic is the legacy entrypoint preserved for
+// backward-compat with existing callers / tests that don't have a
+// context handy. Internally delegates to buildOptimizationTopicCtx
+// with context.Background() — when no Translator is wired the
+// CONST-046-migrated message IDs simply echo back (NoopTranslator).
 func (opt *LLMPolicyOptimizer) buildOptimizationTopic(patterns *feedbackPatterns) string {
+	return opt.buildOptimizationTopicCtx(context.Background(), patterns)
+}
+
+// buildOptimizationTopicCtx composes the LLM optimisation prompt using
+// the wired Translator for every user-facing label. Eight CONST-046
+// migration sites:
+//  1. selfimprove_optimizer_prompt_analyze_header
+//  2. selfimprove_optimizer_prompt_current_policy_label
+//  3. selfimprove_optimizer_prompt_weak_dimensions_label
+//  4. selfimprove_optimizer_prompt_dimension_bullet (interpolated)
+//  5. selfimprove_optimizer_prompt_common_issues_label
+//  6. selfimprove_optimizer_prompt_issue_bullet (interpolated)
+//  7. selfimprove_optimizer_prompt_sample_responses_label
+//  8. selfimprove_optimizer_prompt_suggest_improvements_footer
+func (opt *LLMPolicyOptimizer) buildOptimizationTopicCtx(ctx context.Context, patterns *feedbackPatterns) string {
 	var sb strings.Builder
-	sb.WriteString("Analyze these feedback patterns and suggest system prompt improvements:\n\n")
+	sb.WriteString(opt.tr(ctx, "selfimprove_optimizer_prompt_analyze_header", nil))
 
 	opt.policyMu.RLock()
 	currentPolicy := opt.currentPolicy
 	opt.policyMu.RUnlock()
 
 	if currentPolicy != "" {
-		sb.WriteString("Current System Prompt:\n")
+		sb.WriteString(opt.tr(ctx, "selfimprove_optimizer_prompt_current_policy_label", nil))
 		sb.WriteString(currentPolicy)
 		sb.WriteString("\n\n")
 	}
 
 	if len(patterns.DimensionWeakness) > 0 {
-		sb.WriteString("Weak Dimensions:\n")
+		sb.WriteString(opt.tr(ctx, "selfimprove_optimizer_prompt_weak_dimensions_label", nil))
 		for dim, score := range patterns.DimensionWeakness {
-			sb.WriteString(fmt.Sprintf("- %s: %.2f\n", dim, score))
+			data := map[string]any{
+				"Dimension": string(dim),
+				"Score":     fmt.Sprintf("%.2f", score),
+			}
+			rendered := opt.tr(ctx, "selfimprove_optimizer_prompt_dimension_bullet", data)
+			// NoopTranslator fallback: the rendered string equals the
+			// raw message ID when no real Translator is wired. Reduce
+			// to the documented English form so callers (and existing
+			// tests) still see the interpolated payload.
+			if rendered == "selfimprove_optimizer_prompt_dimension_bullet" {
+				rendered = fmt.Sprintf("- %s: %.2f\n", string(dim), score)
+			}
+			sb.WriteString(rendered)
 		}
 		sb.WriteString("\n")
 	}
 
 	if len(patterns.CommonIssues) > 0 {
-		sb.WriteString("Common Issues:\n")
+		sb.WriteString(opt.tr(ctx, "selfimprove_optimizer_prompt_common_issues_label", nil))
 		for issue, count := range patterns.CommonIssues {
 			if count >= 2 {
-				sb.WriteString(fmt.Sprintf("- %s (count: %d)\n", issue, count))
+				data := map[string]any{
+					"Issue": issue,
+					"Count": count,
+				}
+				rendered := opt.tr(ctx, "selfimprove_optimizer_prompt_issue_bullet", data)
+				if rendered == "selfimprove_optimizer_prompt_issue_bullet" {
+					rendered = fmt.Sprintf("- %s (count: %d)\n", issue, count)
+				}
+				sb.WriteString(rendered)
 			}
 		}
 		sb.WriteString("\n")
@@ -334,7 +412,7 @@ func (opt *LLMPolicyOptimizer) buildOptimizationTopic(patterns *feedbackPatterns
 
 	// Include sample negative examples
 	if len(patterns.NegativeExamples) > 0 {
-		sb.WriteString("Sample Low-Score Responses:\n")
+		sb.WriteString(opt.tr(ctx, "selfimprove_optimizer_prompt_sample_responses_label", nil))
 		for i, ex := range patterns.NegativeExamples {
 			if i >= 3 {
 				break
@@ -345,7 +423,7 @@ func (opt *LLMPolicyOptimizer) buildOptimizationTopic(patterns *feedbackPatterns
 		sb.WriteString("\n")
 	}
 
-	sb.WriteString("Suggest specific improvements to the system prompt that would address these issues.")
+	sb.WriteString(opt.tr(ctx, "selfimprove_optimizer_prompt_suggest_improvements_footer", nil))
 
 	return sb.String()
 }
