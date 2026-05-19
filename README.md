@@ -1,6 +1,19 @@
 # SelfImprove
 
-`digital.vasic.selfimprove` -- AI self-improvement through RLHF, reward modelling, feedback integration, policy optimization, and dimension-weighted scoring.
+**Module**: `digital.vasic.selfimprove` · **Status**: i18n-migrated (round 94) + deep-doc + Challenge enriched (round 201) · **Production LOC**: ~7,200 across 5 source files in `selfimprove/` + `pkg/i18n/`
+
+`digital.vasic.selfimprove` -- AI self-improvement through RLHF, reward modelling, feedback integration, policy optimization, and dimension-weighted scoring. Provides an injected `Translator` seam (CONST-046) so consumers receive locale-aware user-facing strings without SelfImprove ever importing a project-specific i18n stack.
+
+---
+
+## Status Banner
+
+- **2026-05-19 (round 201)** -- deep-doc + test-matrix enrichment per operator's broader directive; this README expanded, `docs/test-coverage.md` added, `challenges/selfimprove_optimizer_challenge.sh` added, public `BuildOptimizationTopicForChallenge` seam exposed for production-path-identical Challenge runner.
+- **2026-05-17 (round 94)** -- CONST-046 i18n migration landed: 8 hardcoded English literals in `optimizer.go::buildOptimizationTopicCtx` routed through `pkg/i18n.Translator`; `LLMPolicyOptimizer.SetTranslator` + NoopTranslator safety default; bilingual fixture seed (EN + sr-Latn) added at round 201.
+- **2026-05-15** -- CONST-047..061 governance cascade.
+- **2026-04-30** -- Bedrock + Azure provider integrations, debate-based reward adapter, constitutional self-critique gate.
+
+---
 
 ## Overview
 
@@ -195,12 +208,69 @@ type SelfImprovementConfig struct {
 | Honesty | 0.10 |
 | Coherence | 0.10 |
 
+## Integration Seams
+
+SelfImprove is **project-not-aware** (CONST-051(B)). Consumers integrate via four seams:
+
+1. **`LLMProvider` injection** -- the consumer's HTTP-backed LLM client. SelfImprove never dials a provider directly; the consumer wires its real client (Bedrock, Azure, Anthropic, OpenAI, Ollama, ...) into `SelfImprovementSystem.Initialize`.
+2. **`DebateService` injection (optional)** -- the consumer's multi-LLM debate orchestrator. When wired, SelfImprove uses it for ensemble reward scoring and ensemble optimization. When nil, SelfImprove falls back to single-LLM mode transparently.
+3. **`Translator` injection (CONST-046)** -- `LLMPolicyOptimizer.SetTranslator(tr)` lets the consumer route the 8 migrated optimizer-prompt messageIDs through its own i18n stack (HelixCode wires this to `helix_code/internal/i18nadapter`). The default `i18n.NoopTranslator` returns the messageID verbatim -- safe for logs, **untranslated for end users** (production consumers MUST inject a real Translator).
+4. **`ProviderVerifier` injection (optional, via `SetVerifier`)** -- trust scores from the consumer's verifier (HelixCode's `LLMsVerifier`) influence which feedback is prioritized.
+
+No reverse coupling: SelfImprove never reaches into a consumer's tree, never imports a project-specific package, never assumes a HelixCode-specific layout. Consumers depend on `digital.vasic.selfimprove`; the converse is forbidden by CONST-051(B).
+
+### CONST-046 round-94 migrated message IDs
+
+The following 8 messageIDs are emitted by `selfimprove/optimizer.go::buildOptimizationTopicCtx` via the wired Translator. Consumers MUST seed their i18n bundles with these keys per locale:
+
+| Message ID                                                  | Triggered when                          | Interpolation placeholders     |
+|-------------------------------------------------------------|-----------------------------------------|--------------------------------|
+| `selfimprove_optimizer_prompt_analyze_header`               | always emitted (prompt header)          | none                           |
+| `selfimprove_optimizer_prompt_current_policy_label`         | when `CurrentPolicy != ""`              | none                           |
+| `selfimprove_optimizer_prompt_weak_dimensions_label`        | when `DimensionWeakness` non-empty      | none                           |
+| `selfimprove_optimizer_prompt_dimension_bullet`             | per weak dimension                      | `{{.Dimension}}`, `{{.Score}}` |
+| `selfimprove_optimizer_prompt_common_issues_label`          | when `CommonIssues` non-empty           | none                           |
+| `selfimprove_optimizer_prompt_issue_bullet`                 | per issue with count >= 2               | `{{.Issue}}`, `{{.Count}}`     |
+| `selfimprove_optimizer_prompt_sample_responses_label`       | when `NegativeExamples` non-empty       | none                           |
+| `selfimprove_optimizer_prompt_suggest_improvements_footer`  | always emitted (prompt footer)          | none                           |
+
+Reference bilingual bundles (EN + sr-Latn) ship under `challenges/fixtures/` and are consumed by the round-201 Challenge for anti-bluff round-trip verification.
+
+---
+
 ## Testing
 
 ```bash
-go build ./...
+# Unit + integration + e2e + security + stress + benchmark suites (race detector on)
 go test ./... -count=1 -race
+
+# Coverage report
+go test ./... -cover -count=1
+
+# Full Challenge (build + unit + bilingual round-trip + anti-bluff mutation)
+bash challenges/selfimprove_optimizer_challenge.sh
 ```
+
+The Challenge exits non-zero if any of:
+
+- `go vet ./...` or `go build ./...` fails
+- unit suite fails or skips
+- EN+SR bundles fail to load or are missing any of the 8 migrated message IDs
+- `BuildOptimizationTopicForChallenge` returns output missing any expected locale-specific marker
+- cross-locale sanity detects EN text leaking into the SR-rendered prompt (or vice versa)
+- the anti-bluff mutation (corrupt one EN YAML entry) is NOT caught by the round-trip assertion
+
+See [`docs/test-coverage.md`](docs/test-coverage.md) for the full test-type matrix (CONST-050(B) compliance ledger).
+
+---
+
+## Governance
+
+- Anti-bluff prime directive: [`CLAUDE.md`](CLAUDE.md) preamble + Article XI §11.9 anchor.
+- CONST-035 (anti-bluff), CONST-046 (no hardcoded content), CONST-050 (test-type coverage), CONST-051 (decoupling), CONST-054 (dependency manifest), CONST-055 (post-pull validation), CONST-061 (pre-force-push merge-first) -- see [`CONSTITUTION.md`](CONSTITUTION.md).
+- Canonical-root inheritance (CONST-059): governance text in this submodule is consumer-side; universal rules live in the HelixConstitution submodule.
+
+---
 
 ## Integration with HelixAgent
 
@@ -210,3 +280,16 @@ SelfImprove connects to HelixAgent through the adapter layer at `internal/adapte
 - **LLMsVerifier**: Provider trust scores from the verifier influence which feedback is prioritized and which providers are considered most reliable for reward evaluation.
 - **Background Optimization**: The system runs as a background service alongside HelixAgent, periodically analyzing collected feedback and updating system prompts.
 - **Policy Management**: Policy updates (system prompt refinements) are applied with rollback capability, maintaining a complete history of all changes.
+
+---
+
+## Module Identity
+
+| Field            | Value                                                       |
+|------------------|-------------------------------------------------------------|
+| Go module        | `digital.vasic.selfimprove`                                 |
+| Go version       | 1.24                                                        |
+| Direct deps      | `github.com/google/uuid`, `github.com/sirupsen/logrus`, `github.com/stretchr/testify` (test-only), `gopkg.in/yaml.v3` (challenge-only) |
+| Upstream remotes | `vasic-digital/SelfImprove` (GitHub + GitLab)               |
+| License          | See repository                                              |
+

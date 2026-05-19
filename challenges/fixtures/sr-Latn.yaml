@@ -1,0 +1,12 @@
+# SelfImprove optimizer-Challenge bilingual fixture -- Serbian (Latin) locale.
+#
+# Bundle format: simple flat key -> string map (no nesting). Values may
+# embed Go text/template placeholders such as {{.Dimension}}.
+selfimprove_optimizer_prompt_analyze_header: "Analiziraj ove obrasce povratnih informacija i predloži poboljšanja sistemskog prompta:\n\n"
+selfimprove_optimizer_prompt_current_policy_label: "Trenutni sistemski prompt:\n"
+selfimprove_optimizer_prompt_weak_dimensions_label: "Slabe dimenzije:\n"
+selfimprove_optimizer_prompt_dimension_bullet: "- {{.Dimension}}: {{.Score}}\n"
+selfimprove_optimizer_prompt_common_issues_label: "Česti problemi:\n"
+selfimprove_optimizer_prompt_issue_bullet: "- {{.Issue}} (broj: {{.Count}})\n"
+selfimprove_optimizer_prompt_sample_responses_label: "Uzorak odgovora sa niskom ocenom:\n"
+selfimprove_optimizer_prompt_suggest_improvements_footer: "Predloži konkretna poboljšanja sistemskog prompta koja bi rešila ove probleme.\n"

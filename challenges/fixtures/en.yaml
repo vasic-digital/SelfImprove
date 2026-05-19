@@ -1,0 +1,18 @@
+# SelfImprove optimizer-Challenge bilingual fixture -- English locale.
+#
+# Bundle format: simple flat key -> string map (no nesting). Values may
+# embed Go text/template placeholders such as {{.Dimension}} -- the
+# Challenge runner resolves them with the data map the production code
+# passes to Translator.T at the call site.
+#
+# Used by challenges/runner/main.go to back a real Translator against
+# LLMPolicyOptimizer.buildOptimizationTopicCtx for anti-bluff round-trip
+# verification (CONST-035 / CONST-046 / CONST-050).
+selfimprove_optimizer_prompt_analyze_header: "Analyze these feedback patterns and suggest system prompt improvements:\n\n"
+selfimprove_optimizer_prompt_current_policy_label: "Current System Prompt:\n"
+selfimprove_optimizer_prompt_weak_dimensions_label: "Weak Dimensions:\n"
+selfimprove_optimizer_prompt_dimension_bullet: "- {{.Dimension}}: {{.Score}}\n"
+selfimprove_optimizer_prompt_common_issues_label: "Common Issues:\n"
+selfimprove_optimizer_prompt_issue_bullet: "- {{.Issue}} (count: {{.Count}})\n"
+selfimprove_optimizer_prompt_sample_responses_label: "Sample Low-Score Responses:\n"
+selfimprove_optimizer_prompt_suggest_improvements_footer: "Suggest specific improvements to the system prompt that would address these issues.\n"
