@@ -321,12 +321,20 @@ func (opt *LLMPolicyOptimizer) optimizeWithLLM(ctx context.Context, patterns *fe
 		return nil, fmt.Errorf("no LLM provider available")
 	}
 
-	systemPrompt := `You are an AI system improvement specialist. Analyze feedback patterns and suggest policy improvements.
+	// CONST-046 round 206 migration: system prompt resolved via wired
+	// Translator so the LLM receives the prompt in the operator's
+	// locale. NoopTranslator returns the message ID verbatim — when
+	// that happens we fall back to the documented English literal so
+	// the LLM still receives a usable system prompt.
+	systemPrompt := opt.tr(ctx, "selfimprove_optimizer_systemprompt_improvement_specialist", nil)
+	if systemPrompt == "selfimprove_optimizer_systemprompt_improvement_specialist" {
+		systemPrompt = `You are an AI system improvement specialist. Analyze feedback patterns and suggest policy improvements.
 Output JSON array of improvements:
 [{"type": "prompt_refinement|guideline_addition|example_addition|constraint_update|tone_adjustment",
   "change": "specific change to make",
   "reason": "why this helps",
   "improvement_score": 0.X}]`
+	}
 
 	prompt := opt.buildOptimizationTopicCtx(ctx, patterns)
 
@@ -426,6 +434,64 @@ func (opt *LLMPolicyOptimizer) buildOptimizationTopicCtx(ctx context.Context, pa
 	sb.WriteString(opt.tr(ctx, "selfimprove_optimizer_prompt_suggest_improvements_footer", nil))
 
 	return sb.String()
+}
+
+// ChallengeSample mirrors the subset of TrainingExample fields the
+// optimizer's prompt-rendering path consumes for negative samples.
+// Exposed as a public, decoupled type so the
+// challenges/runner Go program (CONST-050(B) Challenges leg) can drive
+// the real production rendering path WITHOUT importing the unexported
+// feedbackPatterns aggregate. CONST-051(B): contains no consumer-
+// project context.
+type ChallengeSample struct {
+	Prompt      string
+	RewardScore float64
+}
+
+// ChallengeRenderInput is the public, stable input shape consumed by
+// BuildOptimizationTopicForChallenge. Keeping it separate from
+// feedbackPatterns guarantees the unexported aggregate can evolve
+// freely without breaking external Challenge programs.
+type ChallengeRenderInput struct {
+	CurrentPolicy     string
+	DimensionWeakness map[string]float64
+	CommonIssues      map[string]int
+	NegativeSamples   []ChallengeSample
+}
+
+// BuildOptimizationTopicForChallenge invokes the same rendering path
+// that production Optimize() calls into, with the active Translator
+// wired, and returns the rendered string. It exists to give the
+// challenges/runner Go program a stable public seam that exercises
+// the EXACT production code path (no parallel re-implementation) -- a
+// CONST-035 anti-bluff guarantee that the Challenge cannot silently
+// drift from production behaviour. Safe under concurrent use because
+// it only reads opt state through buildOptimizationTopicCtx, which
+// itself is read-only with respect to opt's mutable fields.
+func (opt *LLMPolicyOptimizer) BuildOptimizationTopicForChallenge(ctx context.Context, in ChallengeRenderInput) string {
+	if in.CurrentPolicy != "" {
+		opt.SetCurrentPolicy(in.CurrentPolicy)
+	}
+	patterns := &feedbackPatterns{
+		CommonIssues:      map[string]int{},
+		DimensionWeakness: map[DimensionType]float64{},
+		ProviderIssues:    map[string]float64{},
+		NegativeExamples:  make([]*TrainingExample, 0, len(in.NegativeSamples)),
+		PositiveExamples:  []*TrainingExample{},
+	}
+	for k, v := range in.CommonIssues {
+		patterns.CommonIssues[k] = v
+	}
+	for k, v := range in.DimensionWeakness {
+		patterns.DimensionWeakness[DimensionType(k)] = v
+	}
+	for _, s := range in.NegativeSamples {
+		patterns.NegativeExamples = append(patterns.NegativeExamples, &TrainingExample{
+			Prompt:      s.Prompt,
+			RewardScore: s.RewardScore,
+		})
+	}
+	return opt.buildOptimizationTopicCtx(ctx, patterns)
 }
 
 func (opt *LLMPolicyOptimizer) parseDebateOptimizations(result *DebateResult, patterns *feedbackPatterns) ([]*PolicyUpdate, error) {

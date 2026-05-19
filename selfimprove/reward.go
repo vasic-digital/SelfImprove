@@ -10,6 +10,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"digital.vasic.selfimprove/pkg/i18n"
 )
 
 // AIRewardModel implements RewardModel using LLM-based evaluation
@@ -21,6 +23,12 @@ type AIRewardModel struct {
 	cache         map[string]*cachedScore
 	cacheMu       sync.RWMutex
 	cacheExpiry   time.Duration
+	// translator resolves CONST-046 user-facing message IDs (round 206
+	// migration covers system prompts sent to evaluator + comparison
+	// LLMs). Defaults to i18n.NoopTranslator{} (loud message-ID echo)
+	// when not wired; production consumers (helix_code) inject
+	// *i18nadapter.Translator via SetTranslator at boot.
+	translator i18n.Translator
 }
 
 type cachedScore struct {
@@ -44,7 +52,35 @@ func NewAIRewardModel(provider LLMProvider, debateService DebateService, config 
 		logger:        logger,
 		cache:         make(map[string]*cachedScore),
 		cacheExpiry:   15 * time.Minute,
+		translator:    i18n.NoopTranslator{},
 	}
+}
+
+// SetTranslator wires a CONST-046-compliant Translator for the reward
+// model's user-facing strings (round 206 migration: 2 system prompts
+// shipped to LLM evaluator + comparison endpoints). Passing nil
+// resets to i18n.NoopTranslator{} (loud echo) — never silently
+// disables translation lookup.
+func (rm *AIRewardModel) SetTranslator(tr i18n.Translator) {
+	if tr == nil {
+		rm.translator = i18n.NoopTranslator{}
+		return
+	}
+	rm.translator = tr
+}
+
+// tr is the internal CONST-046 resolver mirroring LLMPolicyOptimizer.tr
+// — translation failures degrade to the message ID (matches
+// NoopTranslator) so the LLM still receives a non-empty system prompt.
+func (rm *AIRewardModel) tr(ctx context.Context, msgID string, data map[string]any) string {
+	if rm.translator == nil {
+		rm.translator = i18n.NoopTranslator{}
+	}
+	out, err := rm.translator.T(ctx, msgID, data)
+	if err != nil || out == "" {
+		return msgID
+	}
+	return out
 }
 
 // Score returns a reward score for a response
@@ -316,7 +352,12 @@ func (rm *AIRewardModel) scoreWithLLM(ctx context.Context, prompt, response stri
 		return 0.5, fmt.Errorf("no LLM provider available for scoring")
 	}
 
-	systemPrompt := `You are a response quality evaluator. Rate the quality of AI responses.
+	// CONST-046 round 206: Translator-resolved quality-evaluator system
+	// prompt. English-literal fallback preserved verbatim so the LLM
+	// still receives a coherent contract when no locale is wired.
+	systemPrompt := rm.tr(ctx, "selfimprove_reward_systemprompt_quality_evaluator", nil)
+	if systemPrompt == "selfimprove_reward_systemprompt_quality_evaluator" {
+		systemPrompt = `You are a response quality evaluator. Rate the quality of AI responses.
 Your evaluation should consider:
 - Accuracy: Is the information correct?
 - Helpfulness: Does it address the user's needs?
@@ -326,6 +367,7 @@ Your evaluation should consider:
 
 Respond ONLY with a JSON object: {"score": 0.X, "reasoning": "brief explanation"}
 Score range: 0.0 (completely wrong/harmful) to 1.0 (perfect response)`
+	}
 
 	evalPrompt := fmt.Sprintf(`Evaluate this response:
 
@@ -406,10 +448,15 @@ func (rm *AIRewardModel) compareWithLLM(ctx context.Context, prompt, response1, 
 		return nil, fmt.Errorf("no LLM provider for comparison")
 	}
 
-	systemPrompt := `You are comparing AI responses. Determine which response is better.
+	// CONST-046 round 206: Translator-resolved comparison-evaluator
+	// system prompt with English-literal fallback.
+	systemPrompt := rm.tr(ctx, "selfimprove_reward_systemprompt_comparison_evaluator", nil)
+	if systemPrompt == "selfimprove_reward_systemprompt_comparison_evaluator" {
+		systemPrompt = `You are comparing AI responses. Determine which response is better.
 Consider: accuracy, helpfulness, safety, clarity, and relevance.
 Respond ONLY with JSON: {"preferred": "A" or "B", "margin": 0.X, "reasoning": "brief"}
 Margin: 0.0 (nearly equal) to 1.0 (clearly better)`
+	}
 
 	compPrompt := fmt.Sprintf(`Compare these responses:
 

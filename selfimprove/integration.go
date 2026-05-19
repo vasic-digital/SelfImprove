@@ -8,6 +8,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"digital.vasic.selfimprove/pkg/i18n"
 )
 
 // SelfImprovementSystem is the main orchestrator for RLAIF
@@ -34,6 +36,11 @@ type DebateServiceAdapter struct {
 	service     DebateService
 	providerMap map[string]string // Maps debate participant names to provider names
 	logger      *logrus.Logger
+	// translator resolves CONST-046 user-facing message IDs for the two
+	// debate-topic templates this adapter constructs (round 206 migration).
+	// Defaults to i18n.NoopTranslator{}; production consumers (helix_code)
+	// inject *i18nadapter.Translator via SetTranslator at boot.
+	translator i18n.Translator
 }
 
 // NewDebateServiceAdapter creates a new adapter
@@ -45,7 +52,32 @@ func NewDebateServiceAdapter(service DebateService, logger *logrus.Logger) *Deba
 		service:     service,
 		providerMap: make(map[string]string),
 		logger:      logger,
+		translator:  i18n.NoopTranslator{},
 	}
+}
+
+// SetTranslator wires a CONST-046-compliant Translator for the
+// adapter's debate-topic templates. Passing nil resets to
+// i18n.NoopTranslator{} (loud echo).
+func (a *DebateServiceAdapter) SetTranslator(tr i18n.Translator) {
+	if tr == nil {
+		a.translator = i18n.NoopTranslator{}
+		return
+	}
+	a.translator = tr
+}
+
+// tr is the internal CONST-046 resolver. Translation failures degrade
+// to the message ID — debate service still receives a non-empty topic.
+func (a *DebateServiceAdapter) tr(ctx context.Context, msgID string, data map[string]any) string {
+	if a.translator == nil {
+		a.translator = i18n.NoopTranslator{}
+	}
+	out, err := a.translator.T(ctx, msgID, data)
+	if err != nil || out == "" {
+		return msgID
+	}
+	return out
 }
 
 // SetProviderMapping maps debate participant names to provider names
@@ -55,10 +87,20 @@ func (a *DebateServiceAdapter) SetProviderMapping(mapping map[string]string) {
 
 // EvaluateWithDebate implements DebateRewardEvaluator
 func (a *DebateServiceAdapter) EvaluateWithDebate(ctx context.Context, prompt, response string) (*DebateEvaluation, error) {
-	topic := fmt.Sprintf(`Evaluate this AI response quality (0.0-1.0):
+	// CONST-046 round 206: debate topic resolved via wired Translator;
+	// NoopTranslator returns the message ID — fall back to the
+	// documented English literal so the debate service still receives a
+	// well-formed topic.
+	topic := a.tr(ctx, "selfimprove_integration_evaluate_quality_topic", map[string]any{
+		"Prompt":   prompt,
+		"Response": response,
+	})
+	if topic == "selfimprove_integration_evaluate_quality_topic" {
+		topic = fmt.Sprintf(`Evaluate this AI response quality (0.0-1.0):
 Prompt: %s
 Response: %s
 Rate: accuracy, helpfulness, safety, clarity. Return JSON: {"score": X, "dimensions": {...}}`, prompt, response)
+	}
 
 	result, err := a.service.RunDebate(ctx, topic, nil)
 	if err != nil {
@@ -90,11 +132,20 @@ Rate: accuracy, helpfulness, safety, clarity. Return JSON: {"score": X, "dimensi
 
 // CompareWithDebate implements DebateRewardEvaluator
 func (a *DebateServiceAdapter) CompareWithDebate(ctx context.Context, prompt, response1, response2 string) (*DebateComparison, error) {
-	topic := fmt.Sprintf(`Compare these responses. Which is better?
+	// CONST-046 round 206: debate topic resolved via wired Translator
+	// with English-literal fallback for un-wired consumers.
+	topic := a.tr(ctx, "selfimprove_integration_compare_responses_topic", map[string]any{
+		"Prompt":    prompt,
+		"ResponseA": response1,
+		"ResponseB": response2,
+	})
+	if topic == "selfimprove_integration_compare_responses_topic" {
+		topic = fmt.Sprintf(`Compare these responses. Which is better?
 Prompt: %s
 A: %s
 B: %s
 Return JSON: {"preferred": "A" or "B", "margin": 0-1, "reasoning": "..."}`, prompt, response1, response2)
+	}
 
 	result, err := a.service.RunDebate(ctx, topic, nil)
 	if err != nil {

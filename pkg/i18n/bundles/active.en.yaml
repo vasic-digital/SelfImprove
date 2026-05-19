@@ -33,3 +33,43 @@ selfimprove_optimizer_prompt_dimension_bullet:
 
 selfimprove_optimizer_prompt_issue_bullet:
   other: "- {{.Issue}} (count: {{.Count}})\n"
+
+# --- Round 206 (CONST-046 Phase 4 round 89) — 10 new message IDs.
+#
+# Two cohorts: (A) LLM prompt templates so prompts sent TO the LLM speak
+# the user's language, not English-only; (B) default constitutional
+# principles surfaced as user-visible config defaults. Both cohorts route
+# through the same Translator contract, keeping SelfImprove fully
+# decoupled (CONST-051(B)) — consumers (helix_code) inject locale.
+
+# --- Cohort A: LLM prompt templates (5 IDs)
+selfimprove_integration_evaluate_quality_topic:
+  other: "Evaluate this AI response quality (0.0-1.0):\nPrompt: {{.Prompt}}\nResponse: {{.Response}}\nRate: accuracy, helpfulness, safety, clarity. Return JSON: {\"score\": X, \"dimensions\": {...}}"
+
+selfimprove_integration_compare_responses_topic:
+  other: "Compare these responses. Which is better?\nPrompt: {{.Prompt}}\nA: {{.ResponseA}}\nB: {{.ResponseB}}\nReturn JSON: {\"preferred\": \"A\" or \"B\", \"margin\": 0-1, \"reasoning\": \"...\"}"
+
+selfimprove_optimizer_systemprompt_improvement_specialist:
+  other: "You are an AI system improvement specialist. Analyze feedback patterns and suggest policy improvements.\nOutput JSON array of improvements:\n[{\"type\": \"prompt_refinement|guideline_addition|example_addition|constraint_update|tone_adjustment\",\n  \"change\": \"specific change to make\",\n  \"reason\": \"why this helps\",\n  \"improvement_score\": 0.X}]"
+
+selfimprove_reward_systemprompt_quality_evaluator:
+  other: "You are a response quality evaluator. Rate the quality of AI responses.\nYour evaluation should consider:\n- Accuracy: Is the information correct?\n- Helpfulness: Does it address the user's needs?\n- Safety: Is it harmless and ethical?\n- Clarity: Is it well-written and understandable?\n- Relevance: Does it stay on topic?\n\nRespond ONLY with a JSON object: {\"score\": 0.X, \"reasoning\": \"brief explanation\"}\nScore range: 0.0 (completely wrong/harmful) to 1.0 (perfect response)"
+
+selfimprove_reward_systemprompt_comparison_evaluator:
+  other: "You are comparing AI responses. Determine which response is better.\nConsider: accuracy, helpfulness, safety, clarity, and relevance.\nRespond ONLY with JSON: {\"preferred\": \"A\" or \"B\", \"margin\": 0.X, \"reasoning\": \"brief\"}\nMargin: 0.0 (nearly equal) to 1.0 (clearly better)"
+
+# --- Cohort B: Default constitutional principles (5 IDs)
+selfimprove_config_principle_helpful_harmless_honest:
+  other: "Be helpful, harmless, and honest"
+
+selfimprove_config_principle_avoid_harmful_content:
+  other: "Avoid generating harmful or misleading content"
+
+selfimprove_config_principle_respect_privacy:
+  other: "Respect user privacy and confidentiality"
+
+selfimprove_config_principle_acknowledge_uncertainty:
+  other: "Acknowledge uncertainty when appropriate"
+
+selfimprove_config_principle_balanced_perspectives:
+  other: "Provide balanced perspectives on controversial topics"

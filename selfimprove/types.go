@@ -204,29 +204,72 @@ type SelfImprovementConfig struct {
 	MaxBufferSize            int           `json:"max_buffer_size"`
 }
 
-// DefaultSelfImprovementConfig returns default configuration
+// DefaultConstitutionalPrincipleIDs returns the canonical i18n message
+// IDs for the 5 default constitutional principles (CONST-046 round 206
+// migration). Consumers wanting localised principle text resolve each
+// ID through their wired *i18n.Translator at display time. Returning
+// IDs (not literals) keeps this submodule decoupled per CONST-051(B) —
+// SelfImprove never reaches into any consumer's locale machinery.
+func DefaultConstitutionalPrincipleIDs() []string {
+	return []string{
+		"selfimprove_config_principle_helpful_harmless_honest",
+		"selfimprove_config_principle_avoid_harmful_content",
+		"selfimprove_config_principle_respect_privacy",
+		"selfimprove_config_principle_acknowledge_uncertainty",
+		"selfimprove_config_principle_balanced_perspectives",
+	}
+}
+
+// defaultConstitutionalPrinciplesEnglish returns the English-literal
+// fallback used by DefaultSelfImprovementConfig() for backward compat
+// with callers that have not adopted the locale-aware constructor.
+// Each entry MUST stay 1:1 aligned (same order, same intent) with
+// DefaultConstitutionalPrincipleIDs() — drift between the two breaks
+// the round-206 paired-mutation gate.
+func defaultConstitutionalPrinciplesEnglish() []string {
+	return []string{
+		"Be helpful, harmless, and honest",
+		"Avoid generating harmful or misleading content",
+		"Respect user privacy and confidentiality",
+		"Acknowledge uncertainty when appropriate",
+		"Provide balanced perspectives on controversial topics",
+	}
+}
+
+// DefaultSelfImprovementConfig returns default configuration with
+// English-literal constitutional principles (backward-compat — pre
+// round 206 behaviour preserved). Consumers wanting locale-aware
+// principles SHOULD prefer DefaultSelfImprovementConfigIDs(), then
+// translate each ID at display time via their wired Translator.
 func DefaultSelfImprovementConfig() *SelfImprovementConfig {
+	cfg := DefaultSelfImprovementConfigIDs()
+	cfg.ConstitutionalPrinciples = defaultConstitutionalPrinciplesEnglish()
+	return cfg
+}
+
+// DefaultSelfImprovementConfigIDs returns default configuration where
+// ConstitutionalPrinciples holds the canonical i18n message IDs (see
+// DefaultConstitutionalPrincipleIDs). Consumers resolve each ID at
+// render time via their wired *i18n.Translator. This is the
+// CONST-046-compliant constructor — production paths SHOULD prefer
+// this over DefaultSelfImprovementConfig() so principle text reaches
+// non-English users in their own locale.
+func DefaultSelfImprovementConfigIDs() *SelfImprovementConfig {
 	return &SelfImprovementConfig{
-		RewardModelProvider:    "claude",
-		RewardModelName:        "claude-3-sonnet",
-		MinRewardThreshold:     0.5,
-		AutoCollectFeedback:    true,
-		FeedbackBatchSize:      100,
-		MinConfidenceForAuto:   0.8,
-		OptimizationInterval:   24 * time.Hour,
-		MinExamplesForUpdate:   50,
-		MaxPolicyUpdatesPerDay: 3,
-		EnableSelfCritique:     true,
-		UseDebateForReward:     true,
-		UseDebateForOptimize:   true,
-		MaxBufferSize:          10000,
-		ConstitutionalPrinciples: []string{
-			"Be helpful, harmless, and honest",
-			"Avoid generating harmful or misleading content",
-			"Respect user privacy and confidentiality",
-			"Acknowledge uncertainty when appropriate",
-			"Provide balanced perspectives on controversial topics",
-		},
+		RewardModelProvider:      "claude",
+		RewardModelName:          "claude-3-sonnet",
+		MinRewardThreshold:       0.5,
+		AutoCollectFeedback:      true,
+		FeedbackBatchSize:        100,
+		MinConfidenceForAuto:     0.8,
+		OptimizationInterval:     24 * time.Hour,
+		MinExamplesForUpdate:     50,
+		MaxPolicyUpdatesPerDay:   3,
+		EnableSelfCritique:       true,
+		UseDebateForReward:       true,
+		UseDebateForOptimize:     true,
+		MaxBufferSize:            10000,
+		ConstitutionalPrinciples: DefaultConstitutionalPrincipleIDs(),
 	}
 }
 
